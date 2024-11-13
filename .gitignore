@@ -1,0 +1,7 @@
+.env
+/images/test_cases
+/images/test_cases_old
+/images/misc
+/output
+/logs
+tests.txt
