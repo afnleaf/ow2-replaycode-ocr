@@ -3,7 +3,7 @@
 ## Help
 
 ## Install
-[install me](https://discord.com/oauth2/authorize?client_id=1214396853374812211&permissions=68672&scope=bot)
+https://discord.com/oauth2/authorize?client_id=1214396853374812211&permissions=68672&scope=bot
 
 - Click link to add the bot to your server
 - Limit the channels the bot has access to
@@ -14,25 +14,30 @@
 If you would like to run a self hosted version of the bot reach out to me -> @afnckingleaf on twitter or discord.
 
 ## Update permissions
-[permissions](https://discord.com/oauth2/authorize?client_id=1214396853374812211&integration_type=0&scope=applications.commands)
+https://discord.com/oauth2/authorize?client_id=1214396853374812211&integration_type=0&scope=applications.commands
+
 For the updated version, the bot needs permisionns to be able to run and create commands.
 
 ## Commands
 
 `/ocr`
+
 Type this command, then attach an image and press enter. This command will do the image processing for you.
 
 `/ping`
+
 See how fast the connection to the server is.
 
 `/help`
+
 Links you to this page.
 
 
 ----
 
-## What works
-- Post picture in a channel the bot sees, it spits out replay codes as text, but only if the template is matched.
+## Features
+- <s>Post picture in a channel the bot sees, it spits out replay codes as text, but only if the template is matched.</s>
+- /ocr command with an attached picture, the bots spits out replay codes as text.
 - React to the message if it was right or wrong to help out with improving the character recognition.
 
 ## Problems
