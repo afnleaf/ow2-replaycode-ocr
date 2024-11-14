@@ -13,7 +13,7 @@ import responses
 # load token safely
 load_dotenv()
 TOKEN: Final[str] = os.getenv("DISCORD_TOKEN")
-LOG_ID: int = os.getenv("LOG_ID")
+LOG_ID: int = int(os.getenv("LOG_ID"))
 
 # setup bot
 intents: Intents = Intents.default()
@@ -123,9 +123,16 @@ async def ping(interaction):
 # handle incoming reactions
 @bot.event
 async def on_raw_reaction_add(payload):
-    channel = bot.get_channel(payload.channel_id)
     # ignore when in dm or bot adding two reactions on message creation
     if not payload.member or payload.member == bot.user:
+        return
+
+    channel = bot.get_channel(payload.channel_id)
+    if not channel:
+        return
+
+    msg = await channel.fetch_message(payload.message_id)
+    if msg.author != bot.user:
         return
 
     emoji = payload.emoji.name
@@ -133,8 +140,7 @@ async def on_raw_reaction_add(payload):
     #print(payload.message_id)
     if emoji == "✅":
         print(".nice.")
-        #await process_message_id(payload.channel_id, payload.message_id, True)
-        msg = await channel.fetch_message(payload.message_id)
+        #msg = await channel.fetch_message(payload.message_id)
         n = random.random() * 4
         print(n)
         
@@ -152,8 +158,7 @@ async def on_raw_reaction_add(payload):
 
     elif emoji == "❌":
         print(".uhoh.")
-        #await process_message_id(payload.channel_id, payload.message_id, False)
-        await log_bad_message(await channel.fetch_message(payload.message_id), payload.member)
+        await log_bad_message(msg, payload.member)
 
     elif emoji == "🍕":
         msg = await channel.send("mama mia")
@@ -191,41 +196,6 @@ async def log_bad_message(message, member):
             print(f"Log Channel {LOG_ID} not found.")
     except Exception as e:
         print(f"Error while logging message from reaction: {e}")
-
-
-# reaction adding process prints image url in logs
-# collect .uhoh. to .end. to further improve detection algorithm
-async def process_message_id(channel_id, message_id, log_status):
-    channel = bot.get_channel(channel_id)
-    if not channel:
-        print(f"Channel {channel_id} not found.")
-        return
-
-    # logic to get image
-    print(message_id)
-    response_message = await channel.fetch_message(message_id)
-    print(response_message.content)
-    parts = response_message.content.split("\n")
-    image_message_id = parts[0]
-    image_message = await channel.fetch_message(image_message_id)
-
-
-    #print(f"img_id: {image_message_id}")
-    if image_message.attachments:
-        for attachement in image_message.attachments:
-            print(attachement.url)
-            # post to log channel
-            content = f"[{image_message.guild} - {image_message.channel}] {image_message.author} - "
-            if log_status:
-                content += f"✅nice: {attachement.url}"
-                meow = await image_message.channel.send("meow")
-                time.sleep(2)
-                await meow.delete()
-            else:
-                content += f"❌uhoh: {attachement.url}"
-            log_channel = bot.get_channel(int(LOG_ID))
-            await log_channel.send(content)
-    print(".end.")
 
 
 # main entry point
