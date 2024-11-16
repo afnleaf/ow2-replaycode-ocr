@@ -3,7 +3,7 @@
 ## Help
 
 ## Install
-https://discord.com/oauth2/authorize?client_id=1214396853374812211&permissions=68672&scope=bot
+https://discord.com/oauth2/authorize?client_id=1214396853374812211
 
 - Click link to add the bot to your server
 - Limit the channels the bot has access to
