@@ -15,9 +15,10 @@ load_dotenv()
 TEST: bool = True if str(os.getenv("ENVIRONMENT")) == "test" else False
 
 # should go in a config file along with other logging related stuff
+# O, U, I and L excluded as OW2 replay codes don't use them due to similarity with other characters.
 # run once on import
-config_psm8 = "-l eng --oem 3 --psm 8 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-config_psm10 = "-l eng --oem 3 --psm 10 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+config_psm8 = "-l eng --oem 3 --psm 8 -c tessedit_char_whitelist=ABCDEFGHJKMNPQRSTVWXYZ0123456789"
+config_psm10 = "-l eng --oem 3 --psm 10 -c tessedit_char_whitelist=ABCDEFGHJKMNPQRSTVWXYZ0123456789"
 # the directory we will store our images
 output_append = "/app/output/"
 
