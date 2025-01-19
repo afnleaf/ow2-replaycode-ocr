@@ -9,17 +9,25 @@ from PIL import Image, ImageEnhance, ImageFilter
 #from cv2.typing import MatLike
 #from typing import List
 #from transformers import TrOCRProcessor, VisionEncoderDecoderModel
+from rapidocr_onnxruntime import RapidOCR
+
 
 # to enable testing functionality
 load_dotenv()
 TEST: bool = True if str(os.getenv("ENVIRONMENT")) == "test" else False
 
+
 # should go in a config file along with other logging related stuff
 # run once on import
 config_psm8 = "-l eng --oem 3 --psm 8 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 config_psm10 = "-l eng --oem 3 --psm 10 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+VALID_CHARS = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
 # the directory we will store our images
 output_append = "/app/output/"
+
+# load RapidOCR 
+engine = RapidOCR()
+
 
 # load trocr model
 #trocr_processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-printed")
@@ -302,6 +310,24 @@ def process_codes(list_of_crops):
         
     return replaycodes
 
+def classify_character(letter):
+    scales = [0.5, 1.0, 1.5, 2.0, 2.5]
+    results = []
+    for scale in scales:
+        scaled_letter = cv.resize(letter, None, fx=scale, fy=scale)
+        character = pytesseract.image_to_string(scaled_letter, config=config_psm8)
+        if not character:
+            character = pytesseract.image_to_string(scaled_letter, config=config_psm10)
+        if character:
+            character = character[0].strip()
+        else:
+            character = "?"
+        #print(f"{character}:")
+        if character and character in VALID_CHARS:
+            results.append(character)
+    if not results:
+        return None
+    return max(set(results), key=results.count)
 
 # find each letter using contours
 def process_code_mode1(crop, index):
@@ -339,14 +365,16 @@ def process_code_mode1(crop, index):
         # create border around letter for better accuracy
         letter = cv.copyMakeBorder(letter,ws,ws,ws,ws,
             cv.BORDER_CONSTANT,value=[255,255,255])
-        if TEST:
-            cv.imwrite(f"{output_append}char_{i}.png", letter)
-
+   
         # ocr tesseract 
-        character = pytesseract.image_to_string(letter, config=config_psm8)
-        if not character:
-            character = pytesseract.image_to_string(letter, config=config_psm10)
+        #character = pytesseract.image_to_string(letter, config=config_psm8)
+        #if not character:
+        #    character = pytesseract.image_to_string(letter, config=config_psm10)
         #print(f"str <{character.strip()}>")
+        # remove whitespace
+        #character = character.strip()
+
+        character = classify_character(letter)
                 
         '''
         letter_rgb = cv.cvtColor(letter,cv.COLOR_GRAY2RGB)
@@ -357,13 +385,20 @@ def process_code_mode1(crop, index):
         #print(generated_text.upper())
         character = generated_text.upper()
         '''
+        '''
+        # rapidocr test
+        result, elapse = engine(letter)
+        print(result)
+        #print(result)
+        character = None
+        if result:
+            character = result[0][1]
+        #print(character)
+        '''
 
-        # remove whitespace
-        character = character.strip()
-
+        print(character)
         if character == "O":
             code += "0"
-        
         elif len(character) > 1:
             code += character[0]
         else:

@@ -8,3 +8,5 @@ Multi-Template-Matching<2.0.0
 #requests
 Pillow
 #torch
+#
+rapidocr_onnxruntime

@@ -9,4 +9,4 @@ services:
       - ./model-data:/app/model-data
     stdin_open: true
     tty: true
-    restart: unless-stopped
+    #restart: unless-stopped
