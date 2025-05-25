@@ -1,9 +1,1 @@
-.env
-/images/test_cases
-/images/test_cases_old
-/images/misc
-/output
-/output_old
-/logs
-/fonts
-tests.txt
+/archive

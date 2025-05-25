@@ -1,0 +1,19 @@
+pytesseract
+opencv-python-headless
+discord
+python-dotenv==1.0.0
+pandas
+Multi-Template-Matching<2.0.0
+#transformers
+#requests
+Pillow
+
+# granite vision
+numpy<2
+transformers>=4.49
+torch
+torchvision==0.16.0
+huggingface-hub
+huggingface_hub[hf_xet]
+accelerate
+bitsandbytes>=0.39.0

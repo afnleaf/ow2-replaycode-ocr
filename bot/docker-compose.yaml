@@ -1,0 +1,31 @@
+services:
+
+  ow2-replaycode-ocr:
+    build:
+      context: .
+    container_name: ow2-replaycode-ocr
+    volumes:
+      - ./output:/app/output
+      - ./output/vlm:/app/output/vlm
+      - ./model-data:/app/model-data
+    stdin_open: true
+    tty: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    #restart: unless-stopped
+    #deploy:
+    #  resources:
+    #    limits:
+    #      memory: 12G
+    #    reservations:
+    #      memory: 4G
+    # Add swap to help with memory pressure
+    #tmpfs:
+    #  - /tmp:size=2G,exec
+    #    environment:
+    #  - TEMP=/tmp

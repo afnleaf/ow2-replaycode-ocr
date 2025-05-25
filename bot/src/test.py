@@ -1,5 +1,12 @@
-import ocr
+# external
 import cv2 as cv
+import os
+import time
+# local
+import ocr
+import templates
+import vlm
+
 
 
 def load_test_cases():
@@ -23,14 +30,11 @@ def load_test_cases():
     return test_cases
 
 
-# main function, runs the testing harness
-def main():
-    template_filename="/app/images/template_large.png"
-    template = ocr.load_template(template_filename)
-    list_of_templates = ocr.create_templates(template)
+    
 
-    test_cases = load_test_cases()
 
+# get results from test cases
+def test_replaycodes(test_cases, list_of_templates):
     list_of_replaycodes = []
     input_append="/app/images/test_cases/"
     for i, case in enumerate(test_cases):
@@ -39,17 +43,23 @@ def main():
         input_filename = input_append + case
         image = cv.imread(input_filename)
         assert image is not None, "File could not be read"
-        crops = ocr.template_match(image, list_of_templates)
-        replaycodes = ocr.process_codes(crops)
+        crops = templates.template_match(image, list_of_templates)
+        #replaycodes = ocr.process_codes(crops)
+        replaycodes = vlm.process_codes(crops, i)
         list_of_replaycodes.append(replaycodes)
 
-        # control when testing stops, case - 1
-        #if i == 1:
+        # control when testing stops, case
+        #if i+1 >= 13:
         #   break
+    return list_of_replaycodes
 
+
+# compare results to expected 
+def compare(test_cases, list_of_replaycodes):
     print("\nTesting:")
     total_case_codes = 0
     total_passed = 0
+    print(len(list_of_replaycodes))
     for i, replaycodes in enumerate(list_of_replaycodes):
         print(f"Case {i+1}")
         input_filename = f"image_case{i+1}.png"
@@ -67,8 +77,23 @@ def main():
         total_passed += passed
         print(f"Accuracy: {acc}")
         print()
+
     final_acc = total_passed / total_case_codes
     print(f"Final Accuracy: {final_acc}")
+
+
+# main function, runs the testing harness
+def main():
+    # load template match
+    template_filename="/app/images/template_large.png"
+    template = templates.load_template(template_filename)
+    list_of_templates = templates.create_templates(template)
+
+    # run test cases
+    test_cases = load_test_cases()
+    templates.create_output_folders(test_cases)
+    list_of_replaycodes = test_replaycodes(test_cases, list_of_templates)
+    compare(test_cases, list_of_replaycodes)
 
 
 # Default notation

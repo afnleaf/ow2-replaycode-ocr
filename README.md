@@ -1,5 +1,8 @@
 # Replaycode-ocr Discord Bot
 
+## What
+There are two sides of this repo, the discord bot and the tesseract-ocr finetune (work in progress). The finetuned model will be made available when finished.
+
 ## Help
 
 ## Install
@@ -50,12 +53,6 @@ Once the template is found, the replaycode text is isolated and then processed.
 ![](/images/after_2.png)
 
 Now finally Tesseract-OCR can work its magic!
-
-
-
-
-
-
 
 ----
 

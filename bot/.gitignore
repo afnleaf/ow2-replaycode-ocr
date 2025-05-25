@@ -1,0 +1,10 @@
+.env
+/images/test_cases
+/images/test_cases_old
+/images/misc
+/output
+/output_old
+/logs
+/fonts
+tests.txt
+/model-data/granite-vision-3.2-2b

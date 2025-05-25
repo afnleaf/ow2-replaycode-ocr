@@ -30,11 +30,15 @@ assert list_of_templates is not None, "file could not be read, check with os.pat
 log_channel = None
 
 # process image
-async def process_image(interaction, attachment) -> str:
+async def process_image(interaction, attachment, ocrorvlm) -> str:
     try:
         image_data = await attachment.read()
         try:
-            response: [str] = await responses.get_response_from_ocr(interaction.id, image_data, list_of_templates)
+            response = [""]
+            if ocrorvlm:
+                response: [str] = await responses.get_response_from_ocr(interaction.id, image_data, list_of_templates)
+            else:
+                response: [str] = await responses.get_response_from_vlm(interaction.id, image_data, list_of_templates)
             return response
         except Exception as e:
             print(e)
@@ -42,6 +46,39 @@ async def process_image(interaction, attachment) -> str:
     except Exception as e:
         print(e)
         return "Error reading image."
+
+'''
+# process image
+async def process_image(interaction, attachment) -> str:
+    try:
+        image_data = await attachment.read()
+        try:
+            response: [str] = await responses.get_response_from_ocr(
+                interaction.id, image_data, list_of_templates)
+            return response
+        except Exception as e:
+            print(e)
+            return "Error processing image."
+    except Exception as e:
+        print(e)
+        return "Error reading image."
+
+# process image
+async def process_image_vlm(interaction, attachment) -> str:
+    try:
+        image_data = await attachment.read()
+        try:
+            response: [str] = await responses.get_response_from_vlm(
+                interaction.id, image_data, list_of_templates)
+            return response
+        except Exception as e:
+            print(e)
+            return "Error processing image."
+    except Exception as e:
+        print(e)
+        return "Error reading image."
+'''
+
 
 # handle startup of bot
 @bot.event
@@ -81,7 +118,7 @@ async def on_application_command_error(interaction, error):
 
 
 # slash command to run ocr
-@bot.tree.command(name="ocr", description="Process a replaycode image with OCR.")
+@bot.tree.command(name="ocr", description="Process a replaycode image with Tesseract-OCR (faster, less accurate).")
 async def ocr(interaction, image: Attachment):
     print(f"OCR command received at: {datetime.datetime.now()} from {interaction.user} in {interaction.guild}")
     await interaction.response.defer()
@@ -93,7 +130,7 @@ async def ocr(interaction, image: Attachment):
         return
 
     try:
-        response = await process_image(interaction, image)
+        response = await process_image(interaction, image, True)
         print(f"OCR Processing complete at: {datetime.datetime.now()} for {interaction.user} in {interaction.guild}")
         #message = await interaction.followup.send(image, response)
         message = await interaction.followup.send(content=response, file=await image.to_file())
@@ -107,6 +144,37 @@ async def ocr(interaction, image: Attachment):
         
     print(f"[{interaction.guild} - {interaction.channel}] {interaction.user}: {image.url}")
     #print(response)
+
+
+# slash command to run vlm
+@bot.tree.command(name="vlm", description="Process a replaycode image with a Granite Vision 3.2b (slower, more accurate).")
+async def vlm(interaction, image: Attachment):
+    print(f"VLM command received at: {datetime.datetime.now()} from {interaction.user} in {interaction.guild}")
+    await interaction.response.defer()
+
+    media_type = image.content_type.lower().split("/")
+    if media_type[0] != "image" or media_type[1] == "gif":
+        print(f"Invalid image type {media_type}")
+        await interaction.followup.send("Please provide a valid image (not a GIF)")
+        return
+
+    try:
+        response = await process_image(interaction, image, False)
+        print(f"VLM Processing complete at: {datetime.datetime.now()} for {interaction.user} in {interaction.guild}")
+        #message = await interaction.followup.send(image, response)
+        message = await interaction.followup.send(content=response, file=await image.to_file())
+        # with this reactions won't be added in dms
+        if interaction.guild:
+            await message.add_reaction("\u2705")
+            await message.add_reaction("\u274c")
+    except Exception as e:
+        print(f"Error: {e}")
+        await interaction.followup.send("An error occured while processing the image.")
+        
+    print(f"[{interaction.guild} - {interaction.channel}] {interaction.user}: {image.url}")
+    #print(response)
+
+
 
 @bot.tree.command(name="help", description="Help!.")
 async def help(interaction):

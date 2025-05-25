@@ -1,0 +1,10 @@
+services:
+
+  ow2rc-ocr-finetune:
+    build:
+      context: .
+    container_name: ow2rc-ocr-finetune
+    volumes:
+      - ./model-data:/model-data
+    stdin_open: true
+    tty: true
