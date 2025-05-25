@@ -38,21 +38,21 @@ Links you to this page.
 ## How it works
 You input a replay code image such as this one:
 
-![](/images/image_case7.png)
+![](/bot/images/image_case7.png)
 
 The process works by looking for this template:
 
-![](/images/template_large.png)
+![](/bot/images/template_large.png)
 
-![](/images/boxes.png)
+![](/bot/images/boxes.png)
 
 Once the template is found, the replaycode text is isolated and then processed.
 
-![](/images/before2.png)
+![](/bot/images/before2.png)
 
-![](/images/after_2.png)
+![](/bot/images/after_2.png)
 
-Now finally Tesseract-OCR can work its magic!
+Now finally Tesseract-OCR or the Granite Vision 3.2 can work their magic!
 
 ----
 
