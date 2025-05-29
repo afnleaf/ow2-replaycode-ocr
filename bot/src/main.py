@@ -4,7 +4,6 @@ import os
 from dotenv import load_dotenv
 # source modules
 import bot
-import client
 import test
 
 # load environment
@@ -14,10 +13,10 @@ ENV: str = os.getenv("ENVIRONMENT")
 # main entry point
 def main() -> None:
     if ENV == "prod":
-        print("Loading client.")
+        print("Loading Discord Bot.")
         bot.main()
     elif ENV == "test":
-        print("Tests")
+        print("Loading Test Suite")
         #ocr.main()
         test.main()
     else:

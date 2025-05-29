@@ -70,4 +70,5 @@ COPY .env .
 # Create directories
 RUN mkdir -p /app/model-data /app/output
 
-CMD ["python", "./src/test.py"]
+#CMD ["python", "./src/test.py"]
+CMD [ "python", "./src/main.py" ]

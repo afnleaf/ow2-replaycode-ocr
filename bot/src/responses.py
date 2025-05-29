@@ -1,5 +1,6 @@
 # local module
 import ocr
+import vlm
 import templates
 
 # manage input image being processed by the ocr
@@ -33,7 +34,7 @@ async def get_response_from_vlm(interaction_id, image, list_of_templates) -> [st
         image_data = await templates.load_image_from_discord(image)
         crops = templates.template_match(image_data, list_of_templates)        
         # ocr on crops
-        replaycodes = ocr.process_codes(crops)
+        replaycodes = vlm.process_codes(crops, 0)
         # image processing on maps
         #list_of_maps = ocr.process_maps(map_crops)
 
