@@ -1,15 +1,44 @@
 services:
+  # the database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ow2-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db-export:/tmp/export
+    #ports:
+    #  - "5432:5432"  # for external access
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    #restart: unless-stopped
+    networks:
+      - ow2-network
 
+
+  # the bot
   ow2-replaycode-ocr:
     build:
       context: .
     container_name: ow2-replaycode-ocr
+    environment:
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:${DB_PORT}/${DB_NAME}
     volumes:
       - ./output:/app/output
       - ./output/vlm:/app/output/vlm
       - ./model-data:/app/model-data
     stdin_open: true
     tty: true
+    depends_on:
+      postgres:
+        condition: service_healthy
     deploy:
       resources:
         reservations:
@@ -17,6 +46,8 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+    networks:
+      - ow2-network
     #restart: unless-stopped
     #deploy:
     #  resources:
@@ -29,3 +60,13 @@ services:
     #  - /tmp:size=2G,exec
     #    environment:
     #  - TEMP=/tmp
+    #
+    #
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  ow2-network:
+    driver: bridge

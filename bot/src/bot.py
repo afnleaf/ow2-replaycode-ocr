@@ -9,6 +9,7 @@ from discord.ext import commands
 from typing import Final
 # src modules
 import responses
+import database
 
 # load token safely
 load_dotenv()
@@ -256,9 +257,10 @@ async def log_bad_message(message, member):
 **Guild:** {message.guild}
 **Attachments:** {', '.join(attachments) if attachments else 'None'}
 **Reacted by:** {member}
-**Content:**\n {message.content}
+**Content:**\n{message.content}
                 """
         if log_channel:
+            await database.test_db(attachments, message.content)
             await log_channel.send(log_entry)
         else:
             print(f"Log Channel {LOG_ID} not found.")

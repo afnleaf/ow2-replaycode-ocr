@@ -10,10 +10,13 @@ Pillow
 
 # granite vision
 numpy<2
-transformers>=4.49
-torch
+transformers==4.49.0
+torch==2.1.0
 torchvision==0.16.0
 huggingface-hub
 huggingface_hub[hf_xet]
 accelerate
 bitsandbytes>=0.39.0
+
+# database
+asyncpg
