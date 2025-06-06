@@ -8,7 +8,6 @@ import templates
 import vlm
 
 
-
 def load_test_cases():
     test_cases = {
         "image_case1.png": ["SJZ8S6", "RB3DWQ", "W6TVD4"],
@@ -30,9 +29,6 @@ def load_test_cases():
     return test_cases
 
 
-    
-
-
 # get results from test cases
 def test_replaycodes(test_cases, list_of_templates):
     list_of_replaycodes = []
@@ -49,8 +45,8 @@ def test_replaycodes(test_cases, list_of_templates):
         list_of_replaycodes.append(replaycodes)
 
         # control when testing stops, case
-        #if i+1 >= 13:
-        #   break
+        if i+1 >= 1:
+           break
     return list_of_replaycodes
 
 

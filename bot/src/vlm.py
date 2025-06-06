@@ -25,6 +25,10 @@ print("Bool Testing:", TEST)
 # the directory we will store our images
 output_append = "/app/output/"
 
+#prompt = "What is the 6 character code in this image? The output must contain only 6 characters. These are the valid characters: ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" 
+prompt = "What is the exactly 6 character code in this image? The code must be exsactly 6 characters. Answer with the code only." 
+response_pattern = r"<\|assistant\|>\s*(.*)"
+
 
 # granite vision
 #device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -38,7 +42,6 @@ else:
 
 #device = "cpu"
 #device = "cuda"
-
 
 model_id = "ibm-granite/granite-vision-3.2-2b"
 local_model_path = "/app/model-data/granite-vision-3.2-2b"
@@ -74,6 +77,34 @@ if model_path == model_id:
     processor.save_pretrained(local_model_path)
     model.save_pretrained(local_model_path)
 
+if device == "cuda":
+    allocated = torch.cuda.memory_allocated(0) / 1024**3
+    reserved = torch.cuda.memory_reserved(0) / 1024**3
+    total = torch.cuda.get_device_properties(0).total_memory / 1024**3
+    print(f"GPU Memory after loading:")
+    print(f"  Allocated: {allocated:.2f}GB / {total:.2f}GB ({allocated/total*100:.1f}%)")
+    print(f"  Reserved: {reserved:.2f}GB")
+    print(f"  Free for processing: {total - allocated:.2f}GB")
+
+# Clear cache after loading
+if device == "cuda":
+    torch.cuda.empty_cache()
+
+
+
+# gonna need to keep working on this to make it better
+def process_codes(list_of_crops, case_index):
+    total_time_start = time.time()
+    
+    # process all the images for vlm and ocr
+    list_of_images = process_crops_for_vlm(list_of_crops, case_index)
+    replaycodes = process_replaycodes_vlm(list_of_images, case_index)
+
+    total_time = time.time() - total_time_start
+    print(f"Total Time for VLM Test Suite: {total_time}")
+
+    return replaycodes
+
 
 # pre process all the crops into resized cv and PIL images
 def process_crops_for_vlm(list_of_crops, case_index):
@@ -94,42 +125,15 @@ def process_crops_for_vlm(list_of_crops, case_index):
     return list_of_images
 
 
-# gonna need to keep working on this to make it better
-def process_codes(list_of_crops, case_index):
-    total_time_start = time.time()
-    
-    # process all the images for vlm and ocr
-    list_of_images = process_crops_for_vlm(list_of_crops, case_index)
-
-    replaycodes = process_replaycodes_vlm(list_of_images, case_index)
-
-    '''
-    # list of replay code text
-    replaycodes = []
-    for case_index, images in enumerate(list_of_images):
-        #print(f"code {index + 1}:")
-        #single_time_start = time.time()
-        # method 1, image to letters to text
-        #code = process_code_vlm(crop, case_index, code_index)
-        #single_time = time.time() - single_time_start
-        #print(f"Time taken: {single_time}")
-
-        # add code if not already added
-        if code not in replaycodes:
-            replaycodes.append(code)
-        #gc.collect()
-    '''
-
-    total_time = time.time() - total_time_start
-    print(f"Total Time for VLM Test Suite: {total_time}")
-
-    return replaycodes
+def cleanup_cuda_memory():
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
 
 
-#prompt = "What is the 6 character code in this image? The output must contain only 6 characters. These are the valid characters: ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" 
-prompt = "What is the exactly 6 character code in this image? The code must be exsactly 6 characters. Answer with the code only." 
-response_pattern = r"<\|assistant\|>\s*(.*)"
-
+# maybe unbatch this?
 def process_replaycodes_vlm(list_of_images, case_index):
     replaycodes = []
 
@@ -196,54 +200,7 @@ def process_replaycodes_vlm(list_of_images, case_index):
     gc.collect()
     if device == "cuda":
         torch.cuda.empty_cache()
-
+    
+    cleanup_cuda_memory()
     return replaycodes
-
-
-def process_code_vlm(crop, case_index, code_index):
-    code = ""
-
-    conversation = [
-        {
-            "role": "user",
-            "content": [
-                {"type": "image", "url": pil_image},
-                {"type": "text", "text": prompt},
-            ],
-        },
-    ]
-    inputs = processor.apply_chat_template(
-        conversation,
-        add_generation_prompt=True,
-        tokenize=True,
-        return_dict=True,
-        return_tensors="pt"
-    ).to(device)
-    output = model.generate(
-        **inputs, 
-        max_new_tokens=100,
-        temperature=0.0, 
-        do_sample=False
-    )
-    full_response = processor.decode(output[0], skip_special_tokens=True)
-    pattern = r"<\|assistant\|>\s*(.*)"
-    match = re.search(pattern, full_response, re.DOTALL)
-    if match:
-        code = match.group(1).strip()
-    else:
-        code = full_response.strip()
-
-    code = code.upper()
-    code = code.replace("O", "0")
-    print(code)
-
-    # default to ocr when not exactly 6 characters
-    if len(code) != 6:
-        code = ocr.process_code_mode2(crop, case_index, code_index)
-
-    del output, inputs, full_response, pil_image, crop_copy, crop_resize
-    gc.collect()
-
-    return code
-
 

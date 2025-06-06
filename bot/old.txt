@@ -81,3 +81,67 @@
 #
 #RUN pip install --no-cache-dir torch==2.1.0+cu121 torchvision==0.16.0+cu121 -f https://download.pytorch.org/whl/cu121/torch_stable.html
 #RUN pip install --no-cache-dir -r requirements.txt huggingface_hub[hf_xet]
+
+    '''
+    # list of replay code text
+    replaycodes = []
+    for case_index, images in enumerate(list_of_images):
+        #print(f"code {index + 1}:")
+        #single_time_start = time.time()
+        # method 1, image to letters to text
+        #code = process_code_vlm(crop, case_index, code_index)
+        #single_time = time.time() - single_time_start
+        #print(f"Time taken: {single_time}")
+
+        # add code if not already added
+        if code not in replaycodes:
+            replaycodes.append(code)
+        #gc.collect()
+    '''
+def process_code_vlm(crop, case_index, code_index):
+    code = ""
+
+    conversation = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "image", "url": pil_image},
+                {"type": "text", "text": prompt},
+            ],
+        },
+    ]
+    inputs = processor.apply_chat_template(
+        conversation,
+        add_generation_prompt=True,
+        tokenize=True,
+        return_dict=True,
+        return_tensors="pt"
+    ).to(device)
+    output = model.generate(
+        **inputs, 
+        max_new_tokens=100,
+        temperature=0.0, 
+        do_sample=False
+    )
+    full_response = processor.decode(output[0], skip_special_tokens=True)
+    pattern = r"<\|assistant\|>\s*(.*)"
+    match = re.search(pattern, full_response, re.DOTALL)
+    if match:
+        code = match.group(1).strip()
+    else:
+        code = full_response.strip()
+
+    code = code.upper()
+    code = code.replace("O", "0")
+    print(code)
+
+    # default to ocr when not exactly 6 characters
+    if len(code) != 6:
+        code = ocr.process_code_mode2(crop, case_index, code_index)
+
+    del output, inputs, full_response, pil_image, crop_copy, crop_resize
+    gc.collect()
+
+    return code
+
+
