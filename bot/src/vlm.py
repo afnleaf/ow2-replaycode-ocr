@@ -77,7 +77,7 @@ if model_path == model_id:
     processor.save_pretrained(local_model_path)
     model.save_pretrained(local_model_path)
 
-if device == "cuda":
+def cuda_mem_check():
     allocated = torch.cuda.memory_allocated(0) / 1024**3
     reserved = torch.cuda.memory_reserved(0) / 1024**3
     total = torch.cuda.get_device_properties(0).total_memory / 1024**3
@@ -86,10 +86,19 @@ if device == "cuda":
     print(f"  Reserved: {reserved:.2f}GB")
     print(f"  Free for processing: {total - allocated:.2f}GB")
 
+if device == "cuda":
+    cuda_mem_check()
+
 # Clear cache after loading
 if device == "cuda":
     torch.cuda.empty_cache()
 
+def cleanup_cuda_memory():
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
 
 
 # gonna need to keep working on this to make it better
@@ -125,20 +134,14 @@ def process_crops_for_vlm(list_of_crops, case_index):
     return list_of_images
 
 
-def cleanup_cuda_memory():
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.synchronize()
-        torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
-
-
 # maybe unbatch this?
 def process_replaycodes_vlm(list_of_images, case_index):
+    cuda_mem_check()
+
     replaycodes = []
 
     # prepare batches of prompt + image to send to VLM
-    batched = []
+    batch = []
     for code_index, images in enumerate(list_of_images):
         pil_image = images[0]
         conversation = [
@@ -150,57 +153,91 @@ def process_replaycodes_vlm(list_of_images, case_index):
                 ],
             },
         ]
-        batched.append(conversation)
+        batch.append(conversation)
 
-    # tokenize the batch
-    inputs = processor.apply_chat_template(
-        batched,
-        add_generation_prompt=True,
-        tokenize=True,
-        return_dict=True,
-        return_tensors="pt",
-        padding=True
-    ).to(device)
 
-    # generate responses from batch
-    vlm_outputs = model.generate(**inputs, max_new_tokens=25)
-    for i in range(len(vlm_outputs)):
-        full_response = processor.decode(
-            vlm_outputs[i],
-            skip_special_tokens=True,
-            temperature=0.0, 
-            do_sample=False
-        )
-        match = re.search(response_pattern, full_response, re.DOTALL)
-        # is this enough?
-        if match:
-            code = match.group(1).strip()
-        else:
-            code = full_response.strip()
+    try:
+        with torch.no_grad():
+            # now we unbatch it lol, cause out of memory :)
+            for i, single in enumerate(batch):
+                input = processor.apply_chat_template(
+                    [single],
+                    add_generation_prompt=True,
+                    tokenize=True,
+                    return_dict=True,
+                    return_tensors="pt",
+                    padding=True
+                ).to(device)
+                # both temp and sample cannot be false
+                # temp controls the sampling randomness
+                output = model.generate(
+                    **input,
+                    max_new_tokens=25,
+                    #temperature=0.0,
+                    do_sample=False
+                )
 
-        code = code.upper()
-        code = code.replace("O", "0")
-        print(code)
+                crop = list_of_images[i][1]
+                code = parse_output(output[0], crop, case_index, i)
+                replaycodes.append(code)
 
-        # default to ocr when not exactly 6 characters
-        if len(code) != 6:
-            crop = list_of_images[i][1]
-            print(f"{case_index} {i}")
-            code = ocr.process_code_mode2(crop, case_index, i)
-        # not working? image is not good to be resized?
-        #if len(code) != 6:
-        #    crop = list_of_images[i][1]
-        #    print(f"{case_index} {i}")
-        #    code = ocr.process_code_mode1(crop, case_index, i)
-        
-        replaycodes.append(code)
+                del input, output
+                
+            ## tokenize the batch
+            #inputs = processor.apply_chat_template(
+            #    batched,
+            #    add_generation_prompt=True,
+            #    tokenize=True,
+            #    return_dict=True,
+            #    return_tensors="pt",
+            #    padding=True
+            #).to(device)
+            ## generate responses from batch
+            #vlm_outputs = model.generate(**inputs, max_new_tokens=25)
+            #cuda_mem_check()
+            #for i in range(len(vlm_outputs)):
+            #    code = parse_output(vlm_outputs[i])
+            #    replaycodes.append(code)
+            #del vlm_outputs, batched, inputs, list_of_images
 
-    #del vlm_output, inputs, full_response, pil_image, crop_copy, crop_resize
-    del vlm_outputs, batched, inputs, list_of_images
-    gc.collect()
-    if device == "cuda":
-        torch.cuda.empty_cache()
+    except Exception as e:
+            print(f"Error: {e}")
+            import traceback
+            traceback.print_exc()
+
+    finally:
+        if device == "cuda":
+            torch.cuda.empty_cache()
+
     
     cleanup_cuda_memory()
     return replaycodes
+
+def parse_output(output, crop, case_index, i):
+    full_response = processor.decode(
+        output,
+        skip_special_tokens=True,
+    )
+    match = re.search(response_pattern, full_response, re.DOTALL)
+    # is this enough?
+    if match:
+        code = match.group(1).strip()
+    else:
+        code = full_response.strip()
+    
+    code = code.upper()
+    code = code.replace("O", "0")
+    print(code)
+    
+    # default to ocr when not exactly 6 characters
+    if len(code) != 6:
+        print(f"{case_index} {i}")
+        code = ocr.process_code_mode2(crop, case_index, i)
+    # not working? image is not good to be resized?
+    #if len(code) != 6:
+    #    crop = list_of_images[i][1]
+    #    print(f"{case_index} {i}")
+    #    code = ocr.process_code_mode1(crop, case_index, i)
+
+    return code
 

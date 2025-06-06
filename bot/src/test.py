@@ -7,6 +7,8 @@ import ocr
 import templates
 import vlm
 
+STOPCASE = 3
+
 
 def load_test_cases():
     test_cases = {
@@ -45,8 +47,8 @@ def test_replaycodes(test_cases, list_of_templates):
         list_of_replaycodes.append(replaycodes)
 
         # control when testing stops, case
-        if i+1 >= 1:
-           break
+        #if i+1 >= STOPCASE:
+        #   break
     return list_of_replaycodes
 
 
