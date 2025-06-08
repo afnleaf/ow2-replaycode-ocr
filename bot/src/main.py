@@ -1,12 +1,17 @@
-# local modules
-#import ocr
+###
+# main.py
+# entry point that directs whether to go launch discord bot or test suite
+# this is based on env
+###
+
+# external modules
 import os
 from dotenv import load_dotenv
-# source modules
+# local modules
 import bot
 import test
 
-# load environment
+# load environment type
 load_dotenv()
 ENV: str = os.getenv("ENVIRONMENT")
 
@@ -24,3 +29,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

@@ -69,3 +69,34 @@ def process_replaycodes_vlm(list_of_images, case_index):
                     # Try to extract just the code part
                     lines = code.split('\n')
                     for line in lines:
+'''
+# process image
+async def process_image(interaction, attachment) -> str:
+    try:
+        image_data = await attachment.read()
+        try:
+            response: [str] = await responses.get_response_from_ocr(
+                interaction.id, image_data, list_of_templates)
+            return response
+        except Exception as e:
+            print(e)
+            return "Error processing image."
+    except Exception as e:
+        print(e)
+        return "Error reading image."
+
+# process image
+async def process_image_vlm(interaction, attachment) -> str:
+    try:
+        image_data = await attachment.read()
+        try:
+            response: [str] = await responses.get_response_from_vlm(
+                interaction.id, image_data, list_of_templates)
+            return response
+        except Exception as e:
+            print(e)
+            return "Error processing image."
+    except Exception as e:
+        print(e)
+        return "Error reading image."
+'''

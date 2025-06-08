@@ -1,12 +1,19 @@
-# external
+###
+# test.py
+# this is the main test suite that runs when environment is TEST
+###
+
+# external modules
 import cv2 as cv
 import os
 import time
-# local
+# local modules
 import ocr
 import templates
 import vlm
 
+# what case number the test suite stops early at
+# up to 15
 STOPCASE = 3
 
 

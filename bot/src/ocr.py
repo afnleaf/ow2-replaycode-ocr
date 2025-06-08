@@ -1,3 +1,9 @@
+###
+# ocr.py
+# this is where the tesseract-ocr logic is
+###
+
+# external modules
 import cv2 as cv
 import numpy as np
 import os
@@ -6,7 +12,7 @@ import pytesseract
 from dotenv import load_dotenv
 from MTM import matchTemplates, drawBoxesOnRGB
 from PIL import Image, ImageEnhance, ImageFilter
-
+# local modules
 import templates
 
 # to enable testing functionality
@@ -27,24 +33,21 @@ VALID_CHARS = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
 def process_codes(list_of_crops, case_index=0):
     # list of replay code text
     replaycodes = []
-
     for code_index, crop in enumerate(list_of_crops):
         #print(f"code {index + 1}:")
-        
         # method 1, image to letters to text
         code = process_code_mode1(crop, case_index, code_index)
-
         # check for code length, fallback
         if len(code) < 6:
             # method 2, image to word to text
             code = process_code_mode2(crop, case_index, code_index)
-
         # add code if not already added
         if code not in replaycodes:
             replaycodes.append(code)
-        
     return replaycodes
 
+
+# tries multiple sizes of a character, returning the most common one
 def classify_character(letter):
     scales = [0.5, 1.0, 1.5, 2.0, 2.5]
     results = []
@@ -76,11 +79,19 @@ def process_code_mode1(crop, case_index, code_index):
     # adaptive threshold to create binary image
     window_size = 41
     constant_value = 8
-    binary_image = cv.adaptiveThreshold(crop, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv.THRESH_BINARY_INV, window_size, constant_value)
+    binary_image = cv.adaptiveThreshold(
+        crop, 255, 
+        cv.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv.THRESH_BINARY_INV, 
+        window_size, constant_value
+    )
 
     # find contours on the binary image
-    contours, _ = cv.findContours(binary_image, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv.findContours(
+        binary_image, 
+        cv.RETR_EXTERNAL, 
+        cv.CHAIN_APPROX_SIMPLE
+    )
 
     # sort bounding boxes
     bboxes = [cv.boundingRect(c) for c in contours]
@@ -156,6 +167,7 @@ def process_code_mode1(crop, case_index, code_index):
 
     #print(code)
     return code
+
 
 # process code using image to boxes method
 # filter out bad boxes

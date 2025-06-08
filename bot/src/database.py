@@ -1,3 +1,9 @@
+###
+# database.py
+# manages insertions into the postegreSQL database
+###
+
+# external modules
 import os
 import asyncio
 import asyncpg
@@ -44,17 +50,16 @@ async def test_db(attachments, content):
         )
 
         # Query it back
-        rows = await conn.fetch("SELECT * FROM wrong")
-        for row in rows:
-            print(f"ID: {row['id']}, Image: {row['image_url']}, Codes: {row['codes']}")
-        
-        print("✅ Database test successful!")
+        #rows = await conn.fetch("SELECT * FROM wrong")
+        #for row in rows:
+        #    print(f"ID: {row['id']}, Image: {row['image_url']}, Codes: {row['codes']}")
+        print("Database entry successful!\n")
     
     except asyncpg.PostgresError as pg_err:
         print(f"Database PostgreSQLError {pg_err}")
         print(f"Query arguments: $1='{attachments[0] if attachments else None}', $2={list_of_codes if 'list_of_codes' in locals() else 'not parsed yet'}")
     except Exception as e:
-        print(f"❌ Database test failed: {e}")
+        print(f"Database entry failed: {e}\n")
     finally:
         if conn:
             await conn.close()

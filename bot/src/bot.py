@@ -1,3 +1,11 @@
+###
+# bot.py
+# this is where the bot logic lives
+# commands get delegated to different areas of the code
+#
+###
+
+# external modules
 import os
 import random
 import datetime
@@ -7,11 +15,11 @@ from discord import Intents, Client, Message, Emoji, File, Attachment
 from discord import app_commands
 from discord.ext import commands
 from typing import Final
-# src modules
+# local modules
 import responses
 import database
 
-# load token safely
+# load token from env safely
 load_dotenv()
 TOKEN: Final[str] = os.getenv("DISCORD_TOKEN")
 LOG_ID: int = int(os.getenv("LOG_ID"))
@@ -30,6 +38,7 @@ assert list_of_templates is not None, "file could not be read, check with os.pat
 # load this once
 log_channel = None
 
+
 # process image
 async def process_image(interaction, attachment, ocrorvlm) -> str:
     try:
@@ -37,9 +46,17 @@ async def process_image(interaction, attachment, ocrorvlm) -> str:
         try:
             response = [""]
             if ocrorvlm:
-                response: [str] = await responses.get_response_from_ocr(interaction.id, image_data, list_of_templates)
+                response: [str] = await responses.get_response_from_ocr(
+                    interaction.id, 
+                    image_data, 
+                    list_of_templates
+                )
             else:
-                response: [str] = await responses.get_response_from_vlm(interaction.id, image_data, list_of_templates)
+                response: [str] = await responses.get_response_from_vlm(
+                    interaction.id,
+                    image_data,
+                    list_of_templates
+                )
             return response
         except Exception as e:
             print(e)
@@ -47,38 +64,6 @@ async def process_image(interaction, attachment, ocrorvlm) -> str:
     except Exception as e:
         print(e)
         return "Error reading image."
-
-'''
-# process image
-async def process_image(interaction, attachment) -> str:
-    try:
-        image_data = await attachment.read()
-        try:
-            response: [str] = await responses.get_response_from_ocr(
-                interaction.id, image_data, list_of_templates)
-            return response
-        except Exception as e:
-            print(e)
-            return "Error processing image."
-    except Exception as e:
-        print(e)
-        return "Error reading image."
-
-# process image
-async def process_image_vlm(interaction, attachment) -> str:
-    try:
-        image_data = await attachment.read()
-        try:
-            response: [str] = await responses.get_response_from_vlm(
-                interaction.id, image_data, list_of_templates)
-            return response
-        except Exception as e:
-            print(e)
-            return "Error processing image."
-    except Exception as e:
-        print(e)
-        return "Error reading image."
-'''
 
 
 # handle startup of bot
@@ -87,10 +72,13 @@ async def on_ready() -> None:
     print(f"{bot.user} is now running.")
     try:
         global log_channel
-        print(f"Started at: {datetime.datetime.now()}")
+        print(f"Discord Client started at: {datetime.datetime.now()}")
         synced = await bot.tree.sync()
         print(f"Synced {len(synced)} commands(s)")
-        print("Available commands:", [command.name for command in bot.tree.get_commands()])
+        print(
+            "Available commands:", 
+            [command.name for command in bot.tree.get_commands()]
+        )
         log_channel = bot.get_channel(int(LOG_ID))
         if log_channel is None:
             print(f"WARNING: Could not connect to log channel with ID: {LOG_ID}")
@@ -100,93 +88,145 @@ async def on_ready() -> None:
         print(f"Error syncing commands: {e}")
 
 
+# self messages
 @bot.event
 async def on_message(message):
-    # Ignore messages from the bot itself
+    # must ignore messages from the bot itself
     if message.author == bot.user:
         return
     
-    # Optional: inform users about slash commands if they try to use prefix commands
+    # inform users about slash commands if they try to use prefix commands
     if message.content.startswith('!'):
         print(f"User attempted prefix command: {message.content}")
-        await message.channel.send("Please use slash commands: `/ping` or `/ocr`")
+        await message.channel.send(
+            "Please use slash commands: `/ping` or `/ocr`"
+        )
 
 
+# direct messages
 @bot.event
 async def on_application_command_error(interaction, error):
     print(f"Application command error: {str(error)}")
-    await interaction.followup.send("An error occured while processing the command", ephemeral=True);
+    await interaction.followup.send(
+        "An error occured while processing the command", 
+        ephemeral=True
+    )
 
+
+async def image_check(interaction, image: Attachment):
+    media_type = image.content_type.lower().split("/")
+    if media_type[0] != "image" or media_type[1] == "gif":
+        print(f"Invalid image type {media_type}")
+        await interaction.followup.send(
+            "Please provide a valid image (not a GIF)"
+        )
+        return False
+    else:
+        return True
+    
+    #media_type = image.content_type.lower().split("/")
+    #if media_type[0] != "image" or media_type[1] == "gif":
+    #    print(f"Invalid image type {media_type}")
+    #    await interaction.followup.send(
+    #        "Please provide a valid image (not a GIF)")
+    #    return
 
 # slash command to run ocr
-@bot.tree.command(name="ocr", description="Process a replaycode image with Tesseract-OCR (faster, less accurate).")
+@bot.tree.command(
+    name="ocr", 
+    description="""
+    Process a replaycode image with Tesseract-OCR (faster, less accurate)
+    """
+)
 async def ocr(interaction, image: Attachment):
     print(f"OCR command received at: {datetime.datetime.now()} from {interaction.user} in {interaction.guild}")
     await interaction.response.defer()
 
-    media_type = image.content_type.lower().split("/")
-    if media_type[0] != "image" or media_type[1] == "gif":
-        print(f"Invalid image type {media_type}")
-        await interaction.followup.send("Please provide a valid image (not a GIF)")
-        return
+    # attachment must be an image
+    if not await image_check(interaction, image): return
 
+    # process image using ocr
     try:
         response = await process_image(interaction, image, True)
         print(f"OCR Processing complete at: {datetime.datetime.now()} for {interaction.user} in {interaction.guild}")
-        #message = await interaction.followup.send(image, response)
-        message = await interaction.followup.send(content=response, file=await image.to_file())
+        message = await interaction.followup.send(
+            content=response, 
+            file=await image.to_file()
+        )
         # with this reactions won't be added in dms
         if interaction.guild:
             await message.add_reaction("\u2705")
             await message.add_reaction("\u274c")
     except Exception as e:
         print(f"Error: {e}")
-        await interaction.followup.send("An error occured while processing the image.")
+        await interaction.followup.send(
+            "An error occured while processing the image."
+        )
         
     print(f"[{interaction.guild} - {interaction.channel}] {interaction.user}: {image.url}")
+    print("OCR command completed.\n\n")
     #print(response)
 
 
 # slash command to run vlm
-@bot.tree.command(name="vlm", description="Process a replaycode image with a Granite Vision 3.2b (slower, more accurate).")
+@bot.tree.command(
+    name="vlm",
+    description="""
+    Process a replaycode image with a Granite Vision (slower, more accurate)
+    """)
 async def vlm(interaction, image: Attachment):
     print(f"VLM command received at: {datetime.datetime.now()} from {interaction.user} in {interaction.guild}")
     await interaction.response.defer()
 
-    media_type = image.content_type.lower().split("/")
-    if media_type[0] != "image" or media_type[1] == "gif":
-        print(f"Invalid image type {media_type}")
-        await interaction.followup.send("Please provide a valid image (not a GIF)")
-        return
+    # attachment must be an image
+    if not await image_check(interaction, image): return
 
     try:
         response = await process_image(interaction, image, False)
         print(f"VLM Processing complete at: {datetime.datetime.now()} for {interaction.user} in {interaction.guild}")
-        #message = await interaction.followup.send(image, response)
-        message = await interaction.followup.send(content=response, file=await image.to_file())
+        message = await interaction.followup.send(
+            content=response, 
+            file=await image.to_file()
+        )
         # with this reactions won't be added in dms
         if interaction.guild:
             await message.add_reaction("\u2705")
             await message.add_reaction("\u274c")
     except Exception as e:
         print(f"Error: {e}")
-        await interaction.followup.send("An error occured while processing the image.")
+        await interaction.followup.send(
+            "An error occured while processing the image."
+        )
         
     print(f"[{interaction.guild} - {interaction.channel}] {interaction.user}: {image.url}")
+    print("VLM command completed.\n\n")
     #print(response)
 
 
-
-@bot.tree.command(name="help", description="Help!.")
+# help command
+# prints out info
+@bot.tree.command(name="help", description="Help!")
 async def help(interaction):
     print(f"Help command received from {interaction.user}")
-    await interaction.response.send_message(f"Go here: https://github.com/afnleaf/ow2-replaycode-ocr")
+    await interaction.response.send_message(
+        f"""
+        ## Commands
+        - /ocr Runs Tesseract-OCR image detection.
+        - /vlm Runs a Visual Language Model for code detection, which is more accurate than OCR.
+        - /ping Check how fast the connection to the server is.
+        - /help You are here.
+        \n
+        Further information can be found [here](https://github.com/afnleaf/ow2-replaycode-ocr)"
+        """
+    )
 
 
 @bot.tree.command(name="ping", description="Check if the bot is responsive")
 async def ping(interaction):
     print(f"Ping command received from {interaction.user}")
-    await interaction.response.send_message(f"Pong! Latency: {round(bot.latency * 1000)}ms")
+    await interaction.response.send_message(
+        f"Pong! Latency: {round(bot.latency * 1000)}ms"
+    )
 
 
 # handle incoming reactions

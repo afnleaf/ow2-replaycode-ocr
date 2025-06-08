@@ -1,4 +1,9 @@
-# local module
+###
+# responses.py
+# manages response from processing algorithms
+###
+
+# local modules
 import ocr
 import vlm
 import templates
@@ -6,16 +11,13 @@ import templates
 # manage input image being processed by the ocr
 #async def get_response_from_ocr(message_id, image, list_of_templates) -> [str]:
 async def get_response_from_ocr(interaction_id, image, list_of_templates) -> [str]:
-    print(interaction_id)
+    #print(interaction_id)
     try:
         image_data = await templates.load_image_from_discord(image)
         crops = templates.template_match(image_data, list_of_templates)        
         # ocr on crops
         replaycodes = ocr.process_codes(crops)
-        # image processing on maps
-        #list_of_maps = ocr.process_maps(map_crops)
 
-        
         if replaycodes:
             #return replaycodes_to_string(message_id, replaycodes, list_of_maps)
             return replaycodes_to_string(str(interaction_id), replaycodes)
@@ -27,18 +29,16 @@ async def get_response_from_ocr(interaction_id, image, list_of_templates) -> [st
         return None
     #response: [str] = ocr.parse_image(image_data, template)
 
+
 # manage input image being processed by the vlm
 async def get_response_from_vlm(interaction_id, image, list_of_templates) -> [str]:
-    print(interaction_id)
+    #print(interaction_id)
     try:
         image_data = await templates.load_image_from_discord(image)
         crops = templates.template_match(image_data, list_of_templates)        
-        # ocr on crops
+        # vlm on crops
         replaycodes = vlm.process_codes(crops, 0)
-        # image processing on maps
-        #list_of_maps = ocr.process_maps(map_crops)
 
-        
         if replaycodes:
             #return replaycodes_to_string(message_id, replaycodes, list_of_maps)
             return replaycodes_to_string(str(interaction_id), replaycodes)

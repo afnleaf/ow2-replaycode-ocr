@@ -1,4 +1,9 @@
-# external
+###
+# vlm.py
+# this is where the visual language model logic is
+###
+
+# external modules
 import cv2 as cv
 import numpy as np
 import os
@@ -13,7 +18,7 @@ import gc
 import os
 import time
 import warnings
-# local
+# local modules
 import ocr
 
 warnings.filterwarnings("ignore", message="The default value of the antialias parameter")
