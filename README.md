@@ -1,11 +1,10 @@
 # Replaycode-ocr Discord Bot
 
-## What
-There are two sides of this repo, the discord bot and the tesseract-ocr finetune (work in progress). The finetuned model will be made available when finished.
+There are two sides of this repo, the discord bot and the finetuning (work in progress). The finetuned model(s) will be made available when finished. Currently, we are in the process of collecting more data.
 
 ## Help
 
-## Install
+### Install
 https://discord.com/oauth2/authorize?client_id=1214396853374812211
 
 - Click link to add the bot to your server
@@ -16,16 +15,16 @@ https://discord.com/oauth2/authorize?client_id=1214396853374812211
 
 If you would like to run a self hosted version of the bot reach out to me -> @afnckingleaf on twitter or discord.
 
-## Update permissions
+### Update permissions
 https://discord.com/oauth2/authorize?client_id=1214396853374812211&integration_type=0&scope=applications.commands
 
 For the updated version, the bot needs permisionns to be able to run and create commands.
 
-## Commands
+### Commands
 
-`/ocr`
+`/ocr` or `/vlm`
 
-Type this command, then attach an image and press enter. This command will do the image processing for you.
+Type these command, then attach an image and press enter. These commands will do the image processing for you. OCR uses the older Tesseract optical character recognition model trained by Google. VLM uses the newer small visual language model, Granite Vision 3.2 2b from IBM. The VLM pipeline tests as more accurate than the OCR implementation.
 
 `/ping`
 
@@ -52,20 +51,21 @@ Once the template is found, the replaycode text is isolated and then processed.
 
 ![](/bot/images/after_2.png)
 
-Now finally Tesseract-OCR or the Granite Vision 3.2 can work their magic!
+Now finally Tesseract-OCR or the Granite Vision 3.2 VLM can work their magic!
 
 ----
 
 ## Features
 - <s>Post picture in a channel the bot sees, it spits out replay codes as text, but only if the template is matched.</s>
-- /ocr command with an attached picture, the bots spits out replay codes as text.
-- React to the message if it was right or wrong to help out with improving the character recognition.
+- `/ocr` or `/vlm` command with an attached picture, the bots spits out replay codes as text.
+- React to the message if it was right or wrong to help out with improving the character recognition or visual language model weights.
 
 ## Problems
 - Pytesseract character recognition issues
     - X vs 4
     - Q vs 0
     - 0 vs 6
+Using a VLM solves this.
 
 ## ToDo:
 - [x] message bot directly
@@ -82,13 +82,17 @@ Now finally Tesseract-OCR or the Granite Vision 3.2 can work their magic!
 - [x] fixing ocr performance
 - [x] prod vs test env
 - [x] remove priviledged intents
-- [ ] slash commands
-- [ ] improve OCR
+- [x] slash commands
+- [x] improve OCR (we added a VLM!)
 
 ## Environment
-
 ```
 DISCORD_TOKEN=<token>
 LOG_ID=<id>
 ENVIRONMENT= test | prod
+
+# CUDA config
+PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128,garbage_collection_threshold:0.6
+PYTORCH_CUDA_MEMORY_FRACTION=0.85
 ```
+
