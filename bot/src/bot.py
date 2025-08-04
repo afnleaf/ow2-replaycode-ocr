@@ -173,7 +173,8 @@ async def ocr(interaction, image: Attachment):
     name="vlm",
     description="""
     Process a replaycode image with a Granite Vision (slower, more accurate)
-    """)
+    """
+)
 async def vlm(interaction, image: Attachment):
     print(f"VLM command received at: {datetime.datetime.now()} from {interaction.user} in {interaction.guild}")
     await interaction.response.defer()

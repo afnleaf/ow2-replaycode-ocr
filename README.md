@@ -1,5 +1,7 @@
 # Replaycode-ocr Discord Bot
 
+![](ow2replaycodedemo.gif)
+
 There are two sides of this repo, the discord bot and the finetuning (work in progress). The finetuned model(s) will be made available when finished. Currently, we are in the process of collecting more data.
 
 ## Help
